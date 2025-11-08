@@ -1,0 +1,27 @@
+{
+  "exercise": "workout",
+  "timestamp": "2025-11-08 13:10:47",
+  "total_reps": 4,
+  "good_reps": 4,
+  "form_score": 95,
+  "total_frames": 1147,
+  "good_form_frames": 1095,
+  "bad_form_frames": 52,
+  "form_issues": [
+    {
+      "issue": "Back not straight",
+      "count": 48,
+      "severity": "low"
+    },
+    {
+      "issue": "Insufficient depth",
+      "count": 4,
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    "Great form! Keep maintaining this quality",
+    "Consider progressive overload for continued gains"
+  ],
+  "rep_quality": "4/4"
+}

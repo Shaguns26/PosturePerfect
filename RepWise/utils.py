@@ -1,9 +1,12 @@
 import mediapipe as mp
 import numpy as np
+import cv2
 
 # --- MediaPipe Initialization ---
-# We initialize mp_pose here so all exercise files can import and use it
 mp_pose = mp.solutions.pose
+
+# --- OpenCV Font ---
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # --- Color Constants ---
 GOOD_COLOR = (0, 255, 0)  # Green
@@ -57,7 +60,7 @@ def get_landmark_coords(landmarks, part_name, image_width, image_height):
 
 def get_landmark_3d(landmarks, part_name):
     """
-    Retrieves the 3D coordinates (x, y) of a specific landmark.
+    Retrieves the 3D coordinates (x, y, z) of a specific landmark.
     """
     lm = landmarks[mp_pose.PoseLandmark[part_name].value]
     return [lm.x, lm.y, lm.z]
