@@ -1,13 +1,12 @@
-from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR, cv2, FONT, \
+    TEXT_COLOR
 
 
-def process_chest_press(landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
+def process_chest_press(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
     """
     Processes the logic for a Chest Press (Dumbbell or Barbell).
     Assumes a side view, checks for elbow flare and rep range.
     """
-
-    drawing_specs = {}
 
     # Get 3D coordinates
     left_shoulder_3d = get_landmark_3d(landmarks, "LEFT_SHOULDER")
@@ -61,16 +60,23 @@ def process_chest_press(landmarks, frame_width, frame_height, rep_counter, exerc
         if "Tuck" not in feedback_text:
             feedback_text = "Lower with control."
 
-    # Populate drawing_specs
-    drawing_specs = {
-        "elbow_line_color": elbow_line_color,
-        "shoulder_line_color": shoulder_line_color,
-        "left_shoulder_2d": left_shoulder_2d,
-        "left_elbow_2d": left_elbow_2d,
-        "left_wrist_2d": left_wrist_2d,
-        "left_hip_2d": left_hip_2d,
-        "elbow_angle": int(elbow_angle),
-        "shoulder_angle": int(shoulder_angle)
-    }
+    # --- Draw Visual Cues ---
+    # Arm line
+    cv2.line(image, left_shoulder_2d, left_elbow_2d, elbow_line_color, 4)
+    cv2.line(image, left_elbow_2d, left_wrist_2d, elbow_line_color, 4)
 
-    return rep_counter, exercise_state, feedback_text, drawing_specs
+    # Shoulder line (for flare)
+    cv2.line(image, left_elbow_2d, left_shoulder_2d, shoulder_line_color, 4)
+    cv2.line(image, left_shoulder_2d, left_hip_2d, shoulder_line_color, 4)
+
+    # Draw circles
+    cv2.circle(image, left_elbow_2d, 10, elbow_line_color, -1)
+    cv2.circle(image, left_shoulder_2d, 10, shoulder_line_color, -1)
+
+    # Display angles
+    cv2.putText(image, f'Elbow: {int(elbow_angle)}', (left_elbow_2d[0] + 15, left_elbow_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+    cv2.putText(image, f'Shoulder: {int(shoulder_angle)}', (left_shoulder_2d[0] + 15, left_shoulder_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    return rep_counter, exercise_state, feedback_text

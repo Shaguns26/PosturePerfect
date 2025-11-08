@@ -1,13 +1,12 @@
-from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR, cv2, FONT, \
+    TEXT_COLOR
 
 
-def process_deadlift(landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
+def process_deadlift(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
     """
     Processes the logic for a Deadlift.
     Checks for hip hinge vs. squat and back straightness.
     """
-
-    drawing_specs = {}
 
     # Get 3D coordinates
     left_shoulder_3d = get_landmark_3d(landmarks, "LEFT_SHOULDER")
@@ -64,16 +63,23 @@ def process_deadlift(landmarks, frame_width, frame_height, rep_counter, exercise
         if "squat" not in feedback_text:  # Don't overwrite bad form cue
             feedback_text = "Hinge at your hips to lower."
 
-    # Populate drawing_specs
-    drawing_specs = {
-        "hip_line_color": hip_line_color,
-        "knee_line_color": knee_line_color,
-        "left_shoulder_2d": left_shoulder_2d,
-        "left_hip_2d": left_hip_2d,
-        "left_knee_2d": left_knee_2d,
-        "left_ankle_2d": left_ankle_2d,
-        "hip_angle": int(hip_angle),
-        "knee_angle": int(knee_angle)
-    }
+    # --- Draw Visual Cues ---
+    # Back/Hinge line
+    cv2.line(image, left_shoulder_2d, left_hip_2d, hip_line_color, 4)
+    cv2.line(image, left_hip_2d, left_knee_2d, hip_line_color, 4)
 
-    return rep_counter, exercise_state, feedback_text, drawing_specs
+    # Knee line
+    cv2.line(image, left_hip_2d, left_knee_2d, knee_line_color, 4)
+    cv2.line(image, left_knee_2d, left_ankle_2d, knee_line_color, 4)
+
+    # Draw circles
+    cv2.circle(image, left_hip_2d, 10, hip_line_color, -1)
+    cv2.circle(image, left_knee_2d, 10, knee_line_color, -1)
+
+    # Display angles
+    cv2.putText(image, f'Hip: {int(hip_angle)}', (left_hip_2d[0] + 15, left_hip_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+    cv2.putText(image, f'Knee: {int(knee_angle)}', (left_knee_2d[0] + 15, left_knee_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    return rep_counter, exercise_state, feedback_text

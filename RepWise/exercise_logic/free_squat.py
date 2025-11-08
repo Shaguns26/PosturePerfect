@@ -1,14 +1,13 @@
-from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR, cv2, FONT, \
+    TEXT_COLOR
 
 
-def process_air_squat(landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
+def process_air_squat(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
     """
     Processes the logic for an Air Squat (Bodyweight Squat).
     This logic is identical to the barbell squat for form checking.
     Calculates angles for depth and back form, counts reps, and provides feedback.
     """
-
-    drawing_specs = {}
 
     # Get 3D coordinates for angle calculations
     # Using left side, assuming side-on view is best for squats
@@ -71,16 +70,29 @@ def process_air_squat(landmarks, frame_width, frame_height, rep_counter, exercis
             feedback_text = "Lower... hit parallel!"
         knee_line_color = BAD_COLOR  # Indicate not deep enough
 
-    # Populate drawing_specs
-    drawing_specs = {
-        "back_line_color": back_line_color,
-        "knee_line_color": knee_line_color,
-        "left_shoulder_2d": left_shoulder_2d,
-        "left_hip_2d": left_hip_2d,
-        "left_knee_2d": left_knee_2d,
-        "left_ankle_2d": left_ankle_2d,
-        "back_angle": int(back_angle),
-        "knee_angle": int(knee_angle)
-    }
+    # --- Draw Visual Cues ---
+    # Back line (Shoulder to Hip)
+    cv2.line(image, left_shoulder_2d, left_hip_2d, back_line_color, 4)
+    # Hip to Knee
+    cv2.line(image, left_hip_2d, left_knee_2d, back_line_color, 4)
 
-    return rep_counter, exercise_state, feedback_text, drawing_specs
+    # Knee line (Hip to Knee)
+    cv2.line(image, left_hip_2d, left_knee_2d, knee_line_color, 4)
+    # Knee to Ankle
+    cv2.line(image, left_knee_2d, left_ankle_2d, knee_line_color, 4)
+
+    # Draw circles on joints
+    cv2.circle(image, left_hip_2d, 10, back_line_color, -1)
+    cv2.circle(image, left_knee_2d, 10, knee_line_color, -1)
+
+    # Highlight bad back
+    if back_line_color == BAD_COLOR:
+        cv2.circle(image, left_hip_2d, 15, BAD_COLOR, -1)  # Larger red circle on hip
+
+    # Display angles
+    cv2.putText(image, f'Back: {int(back_angle)}', (left_hip_2d[0] + 15, left_hip_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+    cv2.putText(image, f'Knee: {int(knee_angle)}', (left_knee_2d[0] + 15, left_knee_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    return rep_counter, exercise_state, feedback_text

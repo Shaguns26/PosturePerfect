@@ -1,13 +1,12 @@
-from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR, cv2, FONT, \
+    TEXT_COLOR
 
 
-def process_pull_up(landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
+def process_pull_up(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
     """
     Processes the logic for a Pull Up.
     Checks elbow angle for rep range.
     """
-
-    drawing_specs = {}
 
     # Get 3D coordinates
     left_shoulder_3d = get_landmark_3d(landmarks, "LEFT_SHOULDER")
@@ -52,13 +51,17 @@ def process_pull_up(landmarks, frame_width, frame_height, rep_counter, exercise_
         feedback_text = "Pull higher!"
         arm_line_color = BAD_COLOR
 
-    # Populate drawing_specs
-    drawing_specs = {
-        "arm_line_color": arm_line_color,
-        "left_shoulder_2d": left_shoulder_2d,
-        "left_elbow_2d": left_elbow_2d,
-        "left_wrist_2d": left_wrist_2d,
-        "elbow_angle": int(elbow_angle)
-    }
+    # --- Draw Visual Cues ---
+    # Arm line
+    cv2.line(image, left_shoulder_2d, left_elbow_2d, arm_line_color, 4)
+    cv2.line(image, left_elbow_2d, left_wrist_2d, arm_line_color, 4)
 
-    return rep_counter, exercise_state, feedback_text, drawing_specs
+    # Draw circles
+    cv2.circle(image, left_elbow_2d, 10, arm_line_color, -1)
+    cv2.circle(image, left_shoulder_2d, 10, arm_line_color, -1)
+
+    # Display angles
+    cv2.putText(image, f'Elbow: {int(elbow_angle)}', (left_elbow_2d[0] + 15, left_elbow_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    return rep_counter, exercise_state, feedback_text

@@ -1,14 +1,12 @@
-from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, mp_pose, GOOD_COLOR, BAD_COLOR, cv2, FONT, \
+    TEXT_COLOR
 
 
-def process_pushup(landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
+def process_pushup(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):
     """
     Processes the logic for a pushup.
-    Calculates angles, provides feedback, counts reps, and returns drawing specs.
+    Calculates angles, provides feedback, counts reps, and draws cues.
     """
-
-    # Initialize drawing specs
-    drawing_specs = {}
 
     # Get 3D coordinates for angle calculations
     left_shoulder_3d = get_landmark_3d(landmarks, "LEFT_SHOULDER")
@@ -63,17 +61,25 @@ def process_pushup(landmarks, frame_width, frame_height, rep_counter, exercise_s
         if "back" not in feedback_text:  # Don't overwrite critical back feedback
             feedback_text = "Push up or lower!"
 
-    # Populate drawing_specs for the main loop to draw
-    drawing_specs = {
-        "elbow_line_color": elbow_line_color,
-        "back_line_color": back_line_color,
-        "hip_circle_color": hip_circle_color,
-        "left_elbow_2d": left_elbow_2d,
-        "left_shoulder_2d": left_shoulder_2d,
-        "left_hip_2d": left_hip_2d,
-        "left_knee_2d": left_knee_2d,
-        "elbow_angle": int(elbow_angle),
-        "back_angle": int(back_angle)
-    }
+    # --- Draw Visual Cues ---
+    # Elbow circle
+    cv2.circle(image, left_elbow_2d, 10, elbow_line_color, -1)
 
-    return rep_counter, exercise_state, feedback_text, drawing_specs
+    # Back lines
+    cv2.line(image, left_shoulder_2d, left_hip_2d, back_line_color, 4)
+    cv2.line(image, left_hip_2d, left_knee_2d, back_line_color, 4)
+
+    # Hip circle
+    cv2.circle(image, left_hip_2d, 10, hip_circle_color, -1)
+
+    # Highlight bad back
+    if back_line_color == BAD_COLOR:
+        cv2.circle(image, left_hip_2d, 15, BAD_COLOR, -1)  # Larger red circle on hip
+
+    # Display angles
+    cv2.putText(image, f'Elbow: {int(elbow_angle)}', (left_elbow_2d[0] + 15, left_elbow_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+    cv2.putText(image, f'Back: {int(back_angle)}', (left_hip_2d[0] + 15, left_hip_2d[1]),
+                FONT, 0.5, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    return rep_counter, exercise_state, feedback_text
