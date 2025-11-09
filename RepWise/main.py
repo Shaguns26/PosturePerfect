@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
-import numpy as np
 import json
+import time
 from datetime import datetime
 from collections import defaultdict
 
@@ -13,13 +13,14 @@ from exercise_logic.deadlift import process_deadlift
 from exercise_logic.chest_press import process_chest_press
 from exercise_logic.shoulder_press import process_shoulder_press
 from exercise_logic.pullup import process_pull_up
+# --- NEW EXERCISE IMPORTS ---
 from exercise_logic.donkey_calf_raise import process_donkey_calf_raise
 from exercise_logic.lunge import process_lunge
 from exercise_logic.jump_squat import process_jump_squat
 from exercise_logic.bulgarian_split_squat import process_bulgarian_split_squat
 from exercise_logic.crunches import process_crunches
 from exercise_logic.laying_leg_raises import process_laying_leg_raises
-from exercise_logic.russian_twist import process_russian_twist
+from exercise_logic.russian_twists import process_russian_twist
 from exercise_logic.side_plank_up_down import process_side_plank_up_down
 from exercise_logic.elbow_side_plank import process_elbow_side_plank
 from exercise_logic.pike_press import process_pike_press
@@ -29,12 +30,54 @@ from exercise_logic.glute_bridge import process_glute_bridge
 from exercise_logic.kickbacks import process_kickbacks
 from exercise_logic.single_leg_rdl import process_single_leg_rdl
 from exercise_logic.good_mornings import process_good_mornings
+
 # Import shared utilities
 from utils import mp_pose, GOOD_COLOR, BAD_COLOR, TEXT_COLOR
 
 # --- Initialize MediaPipe Pose ---
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
+
+# --- GLOBAL TTS State (Simulated) ---
+# In a real app, this would manage non-blocking audio output.
+last_speech_time = time.time()
+SPEECH_COOLDOWN = 2.0  # Only allow speech every 2 seconds
+
+# Placeholder for API Key and URL (as per instructions)
+API_KEY = ""
+TTS_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={API_KEY}"
+
+
+def speak_feedback(text):
+    """
+    Simulates Text-to-Speech by printing to console.
+    This function limits speech to avoid rapid feedback.
+    In a functional environment, this would call the Gemini TTS API.
+    """
+    global last_speech_time
+    if time.time() - last_speech_time > SPEECH_COOLDOWN and text:
+        # Placeholder for actual API call and audio playback
+        print(f"🔊 TTS Triggered: '{text}'")
+        last_speech_time = time.time()
+
+        # --- TTS API CALL ARCHITECTURE (Simulated) ---
+        # NOTE: Using 'requests' in a synchronous loop like this will block the video feed.
+        # For real-time use, this would require non-blocking calls or threading.
+        # payload = {
+        #     "contents": [{"parts": [{"text": text}]}],
+        #     "generationConfig": {
+        #         "responseModalities": ["AUDIO"],
+        #         "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": "Kore"}}}
+        #     },
+        #     "model": "gemini-2.5-flash-preview-tts"
+        # }
+        # try:
+        #     response = requests.post(TTS_API_URL, json=payload, timeout=2)
+        #     # ... decode base64 audio and play ...
+        # except requests.exceptions.RequestException as e:
+        #     # Exponential backoff would be implemented here
+        #     pass
+        # -----------------------------------------------
 
 
 class WorkoutAnalyzer:
@@ -182,9 +225,11 @@ def display_analysis_summary(summary):
     print("\n" + "=" * 60 + "\n")
 
 
+# In main.py, replacing the existing run_live_mode function:
+
 def run_live_mode(exercise_name):
     """Run live webcam mode with real-time feedback"""
-    print(f"\n🎥 Starting LIVE mode for {exercise_name}")
+    print(f"\n🎥 Starting LIVE mode for {exercise_name.replace('_', ' ').title()}")
     print("Press 'q' to quit\n")
 
     rep_counter = 0
@@ -199,6 +244,9 @@ def run_live_mode(exercise_name):
 
     # Get exercise processor
     exercise_processor = get_exercise_processor(exercise_name)
+
+    # Dynamic Title implementation
+    window_title = f'RepWise - Live Mode: {exercise_name.replace("_", " ").title()}'
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -215,40 +263,86 @@ def run_live_mode(exercise_name):
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        try:
-            landmarks = results.pose_landmarks.landmark
-            prev_reps = rep_counter
+        # --- Pose Detection and Full Body Visibility Check ---
+        is_visible = False
 
-            # Process exercise-specific logic
-            rep_counter, exercise_state, feedback_text = exercise_processor(
-                image, landmarks, frame_width, frame_height,
-                rep_counter, exercise_state, feedback_text
+        # Default state/feedback for when visibility is poor
+        current_frame_feedback = "CENTER AND SHOW ENTIRE BODY"
+        current_speech_text = ""
+
+        if results.pose_landmarks:
+            landmarks = results.pose_landmarks.landmark
+
+            try:
+                # Check key landmarks (Nose, left ankle, right ankle) visibility > 0.5
+                vis_nose = landmarks[mp_pose.PoseLandmark.NOSE.value].visibility
+                vis_l_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].visibility
+                # FIX: Corrected typo from PoseLandland to PoseLandmark
+                vis_r_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].visibility
+
+                # Enforce minimum visibility for processing
+                if vis_nose > 0.5 and vis_l_ankle > 0.5 and vis_r_ankle > 0.5:
+                    is_visible = True
+            except:
+                is_visible = False
+
+        if results.pose_landmarks and is_visible:
+            # --- PROCESS EXERCISE LOGIC (Only if visible) ---
+            try:
+                prev_reps = rep_counter
+
+                processor_results = exercise_processor(
+                    image, landmarks, frame_width, frame_height,
+                    rep_counter, exercise_state, feedback_text
+                )
+
+                if len(processor_results) == 4:
+                    rep_counter, exercise_state, feedback_text, speech_text = processor_results
+                else:
+                    rep_counter, exercise_state, feedback_text = processor_results
+                    speech_text = ""
+
+                current_frame_feedback = feedback_text
+                current_speech_text = speech_text
+
+                # Track if rep was completed
+                if rep_counter > prev_reps:
+                    has_good_form = "good" in feedback_text.lower() or "complete" in feedback_text.lower()
+                    analyzer.log_rep(has_good_form)
+
+                # Log frame
+                has_good_form = "good" in feedback_text.lower()
+                analyzer.log_frame(feedback_text, has_good_form)
+
+
+            except Exception as e:
+                current_frame_feedback = "Error processing pose data."
+                # print(f"Error in frame processing: {e}")
+
+            # Render skeleton
+            mp_drawing.draw_landmarks(
+                image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                mp_drawing.DrawingSpec(color=(100, 100, 100), thickness=2, circle_radius=2),
+                mp_drawing.DrawingSpec(color=(150, 150, 150), thickness=2, circle_radius=2)
             )
 
-            # Track if rep was completed
-            if rep_counter > prev_reps:
-                has_good_form = "good" in feedback_text.lower() or "complete" in feedback_text.lower()
-                analyzer.log_rep(has_good_form)
+        else:
+            # If no pose detected or visibility is low, revert state (important for re-starting the rep logic)
+            exercise_state = "up"
 
-            # Log frame
-            has_good_form = "good" in feedback_text.lower()
-            analyzer.log_frame(feedback_text, has_good_form)
-
-            # Display UI
-            display_live_ui(image, rep_counter, exercise_state, feedback_text, frame_width, frame_height)
-
-        except Exception as e:
-            cv2.putText(image, "Adjust camera or position", (50, frame_height // 2),
+            # Draw a box over the screen to emphasize the no-tracking state
+            cv2.rectangle(image, (0, 0), (frame_width, frame_height), BAD_COLOR, 10)
+            cv2.putText(image, current_frame_feedback, (20, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, BAD_COLOR, 2, cv2.LINE_AA)
 
-        # Render skeleton
-        mp_drawing.draw_landmarks(
-            image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-            mp_drawing.DrawingSpec(color=(100, 100, 100), thickness=2, circle_radius=2),
-            mp_drawing.DrawingSpec(color=(150, 150, 150), thickness=2, circle_radius=2)
-        )
+        # --- Common UI and TTS ---
+        speak_feedback(current_speech_text)
 
-        cv2.imshow('RepWise - Live Mode', image)
+        # Pass exercise_name to display_live_ui
+        display_live_ui(image, rep_counter, exercise_state, current_frame_feedback, frame_width, frame_height,
+                        exercise_name)
+
+        cv2.imshow(window_title, image)  # Use dynamic title
 
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
@@ -261,6 +355,7 @@ def run_live_mode(exercise_name):
     if summary:
         display_analysis_summary(summary)
         analyzer.save_analysis(f"{exercise_name}_live_analysis.json")
+
 
 
 def analyze_recorded_video(video_path, exercise_name):
@@ -311,10 +406,16 @@ def analyze_recorded_video(video_path, exercise_name):
             prev_reps = rep_counter
 
             # Process exercise-specific logic
-            rep_counter, exercise_state, feedback_text = exercise_processor(
+            processor_results = exercise_processor(
                 image, landmarks, frame_width, frame_height,
                 rep_counter, exercise_state, feedback_text
             )
+
+            # Handle new 4-value return or old 3-value return
+            if len(processor_results) == 4:
+                rep_counter, exercise_state, feedback_text, _ = processor_results  # Ignore speech text in video analysis
+            else:
+                rep_counter, exercise_state, feedback_text = processor_results
 
             # Track if rep was completed
             if rep_counter > prev_reps:
@@ -341,30 +442,62 @@ def analyze_recorded_video(video_path, exercise_name):
         print("⚠ No valid data collected. Check video quality and framing.")
 
 
-def display_live_ui(image, rep_counter, exercise_state, feedback_text, frame_width, frame_height):
-    """Display UI elements for live mode"""
+# In main.py, replace the existing display_live_ui function with this:
+
+def display_live_ui(image, rep_counter, exercise_state, feedback_text, frame_width, frame_height, exercise_name):
+    """Display UI elements for live mode, including centered title."""
     overlay = image.copy()
     alpha = 0.6
 
-    # Reps and State box
-    cv2.rectangle(overlay, (0, 0), (280, 120), (0, 0, 0), -1)
+    # 1. Centered Exercise Title (Top)
+    # ***CHANGE 2: Use the passed exercise_name, format it for display***
+    title_text = exercise_name.replace("_", " ").upper()
+    title_color = TEXT_COLOR  # White for visibility
+    title_scale = 1.2
+    title_thickness = 2
+    title_box_height = 50
+
+    # Draw transparent black box for title
+    cv2.rectangle(overlay, (0, 0), (frame_width, title_box_height), (0, 0, 0), -1)
     cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
 
-    cv2.putText(image, 'REPS: ' + str(rep_counter), (10, 40),
+    # Calculate text position to center it
+    title_size = cv2.getTextSize(title_text, cv2.FONT_HERSHEY_SIMPLEX, title_scale, title_thickness)[0]
+    title_x = (frame_width - title_size[0]) // 2
+    title_y = 35
+
+    cv2.putText(image, title_text, (title_x, title_y),
+                cv2.FONT_HERSHEY_SIMPLEX, title_scale, title_color, title_thickness, cv2.LINE_AA)
+
+    # 2. Reps and State box (Top Left - below the title box)
+    box_start_y = title_box_height
+    cv2.rectangle(overlay, (0, box_start_y), (280, box_start_y + 80), (0, 0, 0), -1)
+    cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+
+    cv2.putText(image, 'REPS: ' + str(rep_counter), (10, box_start_y + 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, TEXT_COLOR, 2, cv2.LINE_AA)
-    cv2.putText(image, 'STATE: ' + exercise_state.upper(), (10, 90),
+    # STATE: shows current phase (up, down, recovering)
+    cv2.putText(image, 'STATE: ' + exercise_state.upper(), (10, box_start_y + 70),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, TEXT_COLOR, 2, cv2.LINE_AA)
 
-    # Main Feedback Text
-    text_size = cv2.getTextSize(feedback_text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    # 3. Main Feedback Text (Centered Horizontally at Bottom)
+    text_scale = 1.0
+    text_thickness = 2
+
+    # Calculate size of the text
+    text_size = cv2.getTextSize(feedback_text, cv2.FONT_HERSHEY_SIMPLEX, text_scale, text_thickness)[0]
+
+    # Calculate starting X position to center the text
     text_x = (frame_width - text_size[0]) // 2
     text_y = frame_height - 30
 
     cv2.rectangle(overlay, (0, frame_height - 70), (frame_width, frame_height), (0, 0, 0), -1)
     cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
 
+    # Put the text
     cv2.putText(image, feedback_text, (text_x, text_y),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, TEXT_COLOR, 2, cv2.LINE_AA)
+                cv2.FONT_HERSHEY_SIMPLEX, text_scale, TEXT_COLOR, text_thickness, cv2.LINE_AA)
+
 
 
 def get_exercise_processor(exercise_name):
@@ -377,6 +510,7 @@ def get_exercise_processor(exercise_name):
         "chest_press": process_chest_press,
         "shoulder_press": process_shoulder_press,
         "pull_up": process_pull_up,
+        # --- NEW PROCESSORS ---
         "donkey_calf_raise": process_donkey_calf_raise,
         "forward_lunge": process_lunge,
         "jump_squat": process_jump_squat,
@@ -392,7 +526,7 @@ def get_exercise_processor(exercise_name):
         "glute_bridge": process_glute_bridge,
         "kickbacks": process_kickbacks,
         "single_leg_rdl": process_single_leg_rdl,
-        "good_mornings": process_good_mornings
+        "good_mornings": process_good_mornings,
     }
     return processors.get(exercise_name, process_pushup)
 
@@ -412,6 +546,7 @@ def main():
         "5": "chest_press",
         "6": "shoulder_press",
         "7": "pull_up",
+        # --- NEW EXERCISES ---
         "8": "donkey_calf_raise",
         "9": "forward_lunge",
         "10": "jump_squat",
@@ -427,7 +562,7 @@ def main():
         "20": "glute_bridge",
         "21": "kickbacks",
         "22": "single_leg_rdl",
-        "23": "good_mornings"
+        "23": "good_mornings",
     }
 
     print("\nSelect Exercise:")

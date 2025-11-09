@@ -1,4 +1,4 @@
-from ..utils import get_landmark_3d, get_landmark_coords, calculate_angle, GOOD_COLOR, BAD_COLOR, cv2, FONT, TEXT_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, GOOD_COLOR, BAD_COLOR, cv2, FONT, TEXT_COLOR
 
 
 def process_crunches(image, landmarks, frame_width, frame_height, rep_counter, exercise_state, feedback_text):

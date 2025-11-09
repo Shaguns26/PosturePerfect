@@ -1,0 +1,22 @@
+{
+  "exercise": "workout",
+  "timestamp": "2025-11-08 22:04:56",
+  "total_reps": 5,
+  "good_reps": 5,
+  "form_score": 0,
+  "total_frames": 1753,
+  "good_form_frames": 6,
+  "bad_form_frames": 1747,
+  "form_issues": [
+    {
+      "issue": "Insufficient depth",
+      "count": 25,
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    "Great form! Keep maintaining this quality",
+    "Consider progressive overload for continued gains"
+  ],
+  "rep_quality": "5/5"
+}

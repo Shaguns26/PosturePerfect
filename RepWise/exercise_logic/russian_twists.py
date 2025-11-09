@@ -1,4 +1,4 @@
-from ..utils import get_landmark_3d, get_landmark_coords, calculate_angle, GOOD_COLOR, BAD_COLOR, cv2, FONT, TEXT_COLOR
+from utils import get_landmark_3d, get_landmark_coords, calculate_angle, GOOD_COLOR, BAD_COLOR, cv2, FONT, TEXT_COLOR
 
 # Simple state variables to track the range of motion (rotation)
 ROTATION_LEFT_THRESHOLD = -0.15  # X-coordinate distance relative to hip center (negative is left)
