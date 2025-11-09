@@ -1,0 +1,22 @@
+{
+  "exercise": "workout",
+  "timestamp": "2025-11-09 01:17:49",
+  "total_reps": 4,
+  "good_reps": 4,
+  "form_score": 4,
+  "total_frames": 197,
+  "good_form_frames": 9,
+  "bad_form_frames": 188,
+  "form_issues": [
+    {
+      "issue": "Elbow positioning",
+      "count": 19,
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    "Great form! Keep maintaining this quality",
+    "Consider progressive overload for continued gains"
+  ],
+  "rep_quality": "4/4"
+}
