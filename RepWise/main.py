@@ -13,7 +13,22 @@ from exercise_logic.deadlift import process_deadlift
 from exercise_logic.chest_press import process_chest_press
 from exercise_logic.shoulder_press import process_shoulder_press
 from exercise_logic.pullup import process_pull_up
-
+from exercise_logic.donkey_calf_raise import process_donkey_calf_raise
+from exercise_logic.lunge import process_lunge
+from exercise_logic.jump_squat import process_jump_squat
+from exercise_logic.bulgarian_split_squat import process_bulgarian_split_squat
+from exercise_logic.crunches import process_crunches
+from exercise_logic.laying_leg_raises import process_laying_leg_raises
+from exercise_logic.russian_twist import process_russian_twist
+from exercise_logic.side_plank_up_down import process_side_plank_up_down
+from exercise_logic.elbow_side_plank import process_elbow_side_plank
+from exercise_logic.pike_press import process_pike_press
+from exercise_logic.overhead_squat import process_overhead_squat
+from exercise_logic.chin_ups import process_chin_ups
+from exercise_logic.glute_bridge import process_glute_bridge
+from exercise_logic.kickbacks import process_kickbacks
+from exercise_logic.single_leg_rdl import process_single_leg_rdl
+from exercise_logic.good_mornings import process_good_mornings
 # Import shared utilities
 from utils import mp_pose, GOOD_COLOR, BAD_COLOR, TEXT_COLOR
 
@@ -361,7 +376,23 @@ def get_exercise_processor(exercise_name):
         "deadlift": process_deadlift,
         "chest_press": process_chest_press,
         "shoulder_press": process_shoulder_press,
-        "pull_up": process_pull_up
+        "pull_up": process_pull_up,
+        "donkey_calf_raise": process_donkey_calf_raise,
+        "forward_lunge": process_lunge,
+        "jump_squat": process_jump_squat,
+        "bulgarian_split_squat": process_bulgarian_split_squat,
+        "crunches": process_crunches,
+        "laying_leg_raises": process_laying_leg_raises,
+        "russian_twist": process_russian_twist,
+        "side_plank_up_down": process_side_plank_up_down,
+        "elbow_side_plank": process_elbow_side_plank,
+        "pike_press": process_pike_press,
+        "overhead_squat": process_overhead_squat,
+        "chin_ups": process_chin_ups,
+        "glute_bridge": process_glute_bridge,
+        "kickbacks": process_kickbacks,
+        "single_leg_rdl": process_single_leg_rdl,
+        "good_mornings": process_good_mornings
     }
     return processors.get(exercise_name, process_pushup)
 
@@ -380,7 +411,23 @@ def main():
         "4": "deadlift",
         "5": "chest_press",
         "6": "shoulder_press",
-        "7": "pull_up"
+        "7": "pull_up",
+        "8": "donkey_calf_raise",
+        "9": "forward_lunge",
+        "10": "jump_squat",
+        "11": "bulgarian_split_squat",
+        "12": "crunches",
+        "13": "laying_leg_raises",
+        "14": "russian_twist",
+        "15": "side_plank_up_down",
+        "16": "elbow_side_plank",
+        "17": "pike_press",
+        "18": "overhead_squat",
+        "19": "chin_ups",
+        "20": "glute_bridge",
+        "21": "kickbacks",
+        "22": "single_leg_rdl",
+        "23": "good_mornings"
     }
 
     print("\nSelect Exercise:")
@@ -391,8 +438,24 @@ def main():
     print("5. Chest Press")
     print("6. Shoulder Press")
     print("7. Pull-up")
+    print("8. Bodyweight Donkey Calf Raise")
+    print("9. Forward Lunges")
+    print("10. Jump Squats")
+    print("11. Bulgarian Split Squat")
+    print("12. Crunches")
+    print("13. Laying Leg Raises")
+    print("14. Bodyweight Russian Twist")
+    print("15. Side Plank Up Down")
+    print("16. Elbow Side Plank")
+    print("17. Bodyweight Pike Press")
+    print("18. Pole Overhead Squat")
+    print("19. Chin Ups")
+    print("20. Glute Bridge")
+    print("21. Kickbacks")
+    print("22. Single Legged Romanian Deadlifts")
+    print("23. Good Mornings")
 
-    exercise_choice = input("\nEnter choice (1-7): ").strip()
+    exercise_choice = input("\nEnter choice (1-23): ").strip()
     selected_exercise = exercises.get(exercise_choice, "pushup")
 
     # Mode selection
