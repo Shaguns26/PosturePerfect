@@ -1,0 +1,21 @@
+{
+  "exercise": "workout",
+  "timestamp": "2025-11-08 21:00:05",
+  "total_reps": 0,
+  "good_reps": 0,
+  "form_score": 0,
+  "total_frames": 69,
+  "good_form_frames": 0,
+  "bad_form_frames": 69,
+  "form_issues": [
+    {
+      "issue": "Back not straight",
+      "count": 69,
+      "severity": "high"
+    }
+  ],
+  "recommendations": [
+    "Focus on keeping chest up and maintaining neutral spine"
+  ],
+  "rep_quality": "0/0"
+}
